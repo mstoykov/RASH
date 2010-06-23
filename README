@@ -1,0 +1,30 @@
+RASH - Really a SHell is project of Mihail Stoykov for his Clinux class 
+
+It is not finished, it is not really working at all :) but there is enough code to make Nikola Vladov rip his hair off (hopefully not enough to rip mine as ewell):D
+
+Here is what is supposed to be working;
+ - it should be able to read basic shell script from a file 
+	* it is prefered to have ';' on the end of command and that there is no space before it :) and etc.
+	* hopefully it will skip #
+	* hopefully it will escape any character that have '\' before it
+	* hopefully it will get "as it is" any character that is in "'" or '"'  braces 
+	* it will find the executable file it should execute even if it's a symlink 
+	* it mostprobably will execute every command with kind of file descriptor manipulation and some pthreads
+	* hopefully it will not segfault or use all of your memory and cpu time
+
+ - what doesn't work (hopefully for now :))
+	* the interactive shell is not working :) i'm sure it is in path_misc->nextChar or path_misc->nextArgument but I'm not sure;
+	* pretty much everything that wasn't ment to work is not working this includes:
+		@ I don't sent proper enveronment // could be fixed probably in an hour or two
+		@ I don't parse much of the things that should be parsed like pipes, filedescriptor manipulations, variable expansion and etc
+		@ I don't have any inner commands which will have to be done in path_misc and then execution or in just one of them :)
+		@ and etc and etc
+
+
+
+It can be tested with rash.test and rash.test2 both of them should work correctly.
+
+
+I'm really sorry that I couldn't atleast finish the interactive shell. I hope I will continue working in the next few days and so finish at least that or some of the other parts but I have other exams and I already stumbled on all kind of problems connected to anything from pointers through file descriptors to segfaults in an unusual places :).
+
+
