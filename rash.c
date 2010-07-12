@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include "path_misc.h"
 #include "execution.h"
+
 void interactive(){
 	struct codeBreaking cb ;
 	init(&(cb.argv));
@@ -43,7 +44,6 @@ void interactive(){
 		freeAll(cb.argv);
 		cb.command = NULL;
 	}
-	//printCommand(&cb);
 	close (cb.fs);
 }
 
@@ -70,7 +70,6 @@ void executeFile(char * filename){
 		cutCommand(&cb);
 		if (cb.command == NULL) break;
 		runTheCommand(&cb);
-		//printCommand(&cb);
 		freeAll(cb.argv);
 		cb.command = NULL;
 	}

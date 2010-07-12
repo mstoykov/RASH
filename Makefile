@@ -19,13 +19,9 @@ all: lib.a $(ALL)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $^
 
-
-
 rash: rash.c lib.a
 	$(CC) $(CFLAGS) $(LDFLAGS)  $^ $(LIBS) -o $@
 	
-ex_%: ex_%.c lib.a
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ -lowfat
 
 strip: $(ALL)
 	$(STR) $^
@@ -37,7 +33,7 @@ idx:
 	make clean
 	mkhtmlindex -m *
 
-lib.a: linked_list.o path.o path_misc.o execution.o 
+lib.a: linked_list.o path_misc.o execution.o 
 	ar cr $@ $^
 
 clean:

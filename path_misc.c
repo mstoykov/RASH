@@ -29,52 +29,49 @@
 #include <sys/wait.h>
 #include "path_misc.h"
 
+#define PATH_LENGTH 256
+#define REAL_FILE_NAME_LENGTH 512
+
 int fileIsExec(const char * name){
-		struct stat statbuf;
-		int res = (stat(name, &statbuf) == 0);  
-		if (res != 0 ) {
-			if (S_ISLNK(statbuf.st_mode)){ //it's a symlink
-				char target_path[256];
-				int len = readlink (name, target_path, sizeof (target_path));
-				if (len == -1) {
-					if (errno == EINVAL)
-						exit(32);// It's not a symbolic link
-					else
-						exit (33);
-				}
-				else {
-					target_path[len] = '\0';
-					int p = fileIsExec(target_path);
-					return p;
-				}
-			}else {
-			 	res = (S_ISREG(statbuf.st_mode)   // the file is regular or symlink 
-			 		&&
-					( ((statbuf.st_mode & S_IXUSR) == S_IXUSR && getuid() == statbuf.st_uid) // we are the owner and we've got the rights
-					|| ((statbuf.st_mode & S_IXGRP) == S_IXGRP && getgid() == statbuf.st_gid) // we are from the group and we've got the rights
-					|| ((statbuf.st_mode & S_IXOTH) == S_IXOTH)));// we are nobody but we've got the rights
-				}
-		} else { // interesting :)
-			char target_path[256];
+	struct stat statbuf;
+	int res = (stat(name, &statbuf) == 0);  
+	if (res != 0 ) {
+		if (S_ISLNK(statbuf.st_mode)){ //it's a symlink
+			char target_path[PATH_LENGTH];
 			int len = readlink (name, target_path, sizeof (target_path));
 			if (len == -1) {
-				if (errno == EINVAL)
-					;// It's not a symbolic link
-				else
-					exit (33); //something went terribly wrong
-			} else {
+				perror("Symlink failed in path_misc ");
+			}
+			else {
 				target_path[len] = '\0';
 				int p = fileIsExec(target_path);
 				return p;
 			}
+		}else {
+		 	res = (S_ISREG(statbuf.st_mode)   // the file is regular or symlink 
+		 		&&
+				( ((statbuf.st_mode & S_IXUSR) == S_IXUSR && getuid() == statbuf.st_uid) // we are the owner and we've got the rights
+				|| ((statbuf.st_mode & S_IXGRP) == S_IXGRP && getgid() == statbuf.st_gid) // we are from the group and we've got the rights
+				|| ((statbuf.st_mode & S_IXOTH) == S_IXOTH)));// we are nobody but we've got the rights
+			}
+	} else { // interesting :)
+		char target_path[PATH_LENGTH];
+		int len = readlink (name, target_path, sizeof (target_path));
+		if (len == -1) {
+			perror("Symlink second failed in path_misc ");
+		} else {
+			target_path[len] = '\0';
+			int p = fileIsExec(target_path);
+			return p;
 		}
-		return res;
+	}
+	return 0;
 }
 char* pathToExecutable(char* name, char* path){
 	int len = 0;
 	struct dirent *file;
 	char * dir_name;
-	char * real_file_name = alloca(sizeof *real_file_name * 512); //magical number for maximum path length
+	char * real_file_name = alloca(sizeof *real_file_name * REAL_FILE_NAME_LENGTH); //magical number for maximum path length
 	DIR *dir;
 	while (*(path+len++) != '\0') ;
 	int i = 0;
@@ -83,20 +80,13 @@ char* pathToExecutable(char* name, char* path){
 		dir_name = alloca(sizeof *dir_name *(i+1) );
 		if (strncpy(dir_name, path+len-i, i) == NULL) exit (11);
 		*(dir_name+i) = '\0';
-		//write (1,"\n->", 3);
-		//write (1, dir_name, strlen(dir_name));
 		dir  = opendir(dir_name);
 		if (dir == NULL) exit(12);
 		while ( (file = readdir(dir))!= NULL){
 			/* this could not work with symlinks */
-			//real_file_name = alloca(sizeof *real_file_name * (strlen(dir_name) + strlen(file->d_name)+5));
 			strcpy(real_file_name, dir_name);
 			strcat(real_file_name, "/");
 			strcat(real_file_name, file->d_name);
-//			*(real_file_name +  (strlen(dir_name) + strlen(file->d_name)) + 1) = '\0';
-//			write (1,"\n--->", 5);
-//			write (1, real_file_name, strlen(real_file_name));
-//			write (1,"\n",1);
 			if ( strcmp(name,file->d_name) == 0  ) {
 		                if (!fileIsExec(real_file_name)) break; //I think there won't be another file with the same name :)
 				int len = strlen(real_file_name);
@@ -105,11 +95,8 @@ char* pathToExecutable(char* name, char* path){
 				// cleaning up
 				return result;
 			}
-//			free(real_file_name);
-			//free (file); //seg fault ;)
 		}
 		if ((len - i) == 0) break;
-		// here we go again :) 
 		i++;
 		len -= i;
 		i =0;
@@ -128,7 +115,6 @@ void  nextChar(struct codeBreaking * code, char * c) {
 }
 
 void setCommand(struct codeBreaking * code, char ** argument){
-	//write(1,*argument, strlen(*argument));
 	code->command = pathToExecutable(*argument, getenv("PATH"));
 	if(code->command == NULL) exit (127);
 }
@@ -219,42 +205,4 @@ void printCommand (struct codeBreaking * code){
 		br++;
 	}
 	write(1,"\n",1);
-	
 }
-
-/*
-int main(){
-	struct codeBreaking cb ;
-	init(&(cb.argv));
-	if ( (cb.fs = open("rash.test2", O_RDONLY)) == -1){
-		if (errno ==ENOENT){
-			write (1,"ENOENT",6);
-		} else if(errno ==EACCES) {
-				write (1,"EACCES",6);
-		} else if(errno == EEXIST) {
-			write (1,"EEXIST", 6);
-		} else {
-			write (1,"UNKNOWN", 7);
-		}
-		return 1;
-	}
-	//cb.fs = 0; //interactive shell :)
-	cb.command=NULL;
-	char *c = malloc (sizeof c);
-	cb.buf =malloc (sizeof *cb.buf * BUF_LEN);
-	cb.len =0;
-	while (1) {
-		nextChar(&cb, c);
-		if (*c==3) break;
-		else write(1,c,1);
-	}
-	//sleep(5);
-	cutCommand(&cb);
-	//sleep(5);
-	close (cb.fs);
-	//sleep(5);
-	runTheCommand(&cb);
-	//sleep(5);
-	printCommand(&cb);
-	return 0;
-}*/
